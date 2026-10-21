@@ -1,5 +1,5 @@
 // Package infer turns raw log lines into a schema. It decides the structural
-// mode (positional, key=value, JSON) from the data itself — never from a flag —
+// mode (positional, key=value, JSON) from the data itself, never from a flag,
 // then infers field types from the values it sees.
 package infer
 
@@ -43,6 +43,14 @@ func (o Options) maxEnum() int {
 
 // ReadLines reads a log file into memory, skipping blank lines.
 func ReadLines(path string) ([]string, error) {
+	return ReadLinesLimit(path, 0)
+}
+
+// ReadLinesLimit reads at most max non-empty lines from path. The scanner stops
+// as soon as the sample is full, so `learn --limit` on a multi-gigabyte log
+// reads a bounded prefix instead of loading the whole file and slicing it.
+// max <= 0 reads every line.
+func ReadLinesLimit(path string, max int) ([]string, error) {
 	fh, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -53,6 +61,9 @@ func ReadLines(path string) ([]string, error) {
 	sc.Buffer(make([]byte, 0, 64*1024), maxLineBytes)
 	var lines []string
 	for sc.Scan() {
+		if max > 0 && len(lines) >= max {
+			break
+		}
 		raw := strings.TrimRight(sc.Text(), " \t\r")
 		if strings.TrimSpace(raw) == "" {
 			continue
@@ -67,7 +78,7 @@ func ReadLines(path string) ([]string, error) {
 
 // FromFile reads path and infers its schema.
 func FromFile(path string, opts Options) (*schema.Schema, error) {
-	lines, err := ReadLines(path)
+	lines, err := ReadLinesLimit(path, opts.MaxSampleLines)
 	if err != nil {
 		return nil, err
 	}

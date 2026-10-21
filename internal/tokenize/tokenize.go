@@ -88,13 +88,33 @@ func Line(line string) ([]Token, error) {
 				}
 				i++
 			}
-			toks = append(toks, Token{Value: line[start:i], Kind: Word})
+			value, next := glueSuffix(line, start, i)
+			toks = append(toks, Token{Value: value, Kind: Word})
+			i = next
 		}
 	}
 	if len(toks) == 0 {
 		return nil, ErrEmpty
 	}
 	return toks, nil
+}
+
+// glueSuffix extends a bare word with bracket groups and a trailing colon that
+// are written flush against it. Syslog writers emit "orca[50013]:" with no
+// space, so splitting on '[' invents a pid field and a ":" field that exist
+// nowhere in the format.
+func glueSuffix(line string, start, end int) (string, int) {
+	for end < len(line) && line[end] == '[' {
+		close := strings.IndexByte(line[end:], ']')
+		if close < 0 {
+			break
+		}
+		end += close + 1
+		if end < len(line) && line[end] == ':' {
+			end++
+		}
+	}
+	return line[start:end], end
 }
 
 // Shape renders the structural signature of a token slice, for example

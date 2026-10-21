@@ -120,8 +120,8 @@ type Change struct {
 	Detail string
 	// Note marks an informational change. Enum sets move with traffic and never
 	// make the generated parser reject a line, so they are reported but do not
-	// count as drift — otherwise every CI run on real logs fails on package
-	// names and user agents alone.
+	// count as drift. Otherwise every CI run on real logs fails on package names
+	// and user agents alone.
 	Note bool
 }
 
@@ -144,8 +144,8 @@ func (c Change) String() string {
 }
 
 // Diff compares two schemas. A field is matched by name, so a renamed field
-// shows up as one removal plus one addition — that is intentional, because the
-// emitted struct member changes too.
+// shows up as one removal plus one addition. That is intentional: the emitted
+// struct member changes too.
 func Diff(old, new *Schema) []Change {
 	oldByName := make(map[string]Field, len(old.Fields))
 	for _, f := range old.Fields {

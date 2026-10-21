@@ -1,6 +1,8 @@
 package infer
 
 import (
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -305,5 +307,81 @@ func TestDateWithoutClockDoesNotFold(t *testing.T) {
 func TestEmptyInput(t *testing.T) {
 	if _, err := FromLines("empty.log", []string{"", "   "}, Options{}); err == nil {
 		t.Fatal("want error for empty input")
+	}
+}
+
+var syslogLines = []string{
+	`Oct 21 18:18:38 parrot kwin_wayland_wrapper[2264]: kwin_scene_opengl: 0x3: GL_INVALID_OPERATION in glDrawBuffers(unsupported buffer GL_BACK_LEFT)`,
+	`Oct 21 18:18:39 parrot kwin_wayland_wrapper[2264]: kwin_scene_opengl: 0x3: GL_INVALID_OPERATION in glDrawBuffers(unsupported buffer GL_BACK_RIGHT)`,
+	`Oct 21 18:18:40 parrot kwin_wayland_wrapper[2264]: kwin_scene_opengl: 0x2: GL_INVALID_ENUM in glBindFramebuffer(invalid buffer GL_FRONT_LEFT)`,
+}
+
+// syslog writes the pid flush against the tag. Splitting "orca[50013]:" on '['
+// invents a pid field and a bare ":" field, so the schema grows columns that no
+// consumer can name.
+func TestGluedProcessTagIsOneField(t *testing.T) {
+	s, err := FromLines("syslog", syslogLines, Options{})
+	if err != nil {
+		t.Fatalf("FromLines: %v", err)
+	}
+	if s.Coverage() != 1 {
+		t.Fatalf("coverage = %v, want 1", s.Coverage())
+	}
+	samples := make([]string, 0, len(s.Fields))
+	for _, field := range s.Fields {
+		samples = append(samples, field.Sample)
+		if field.Sample == ":" || field.Sample == "2264" {
+			t.Errorf("field %q leaked a tag fragment: %#v", field.Name, field)
+		}
+	}
+	if got := s.Fields[0]; got.Span != 3 || got.Layout != "Jan _2 15:04:05" {
+		t.Errorf("stamp = %+v, want span 3 syslog layout", got)
+	}
+	found := false
+	for _, sample := range samples {
+		if sample == "kwin_wayland_wrapper[2264]:" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("tag token missing from fields: %v", samples)
+	}
+	pattern := regexp.MustCompile(s.Pattern)
+	for _, line := range syslogLines {
+		if !pattern.MatchString(line) {
+			t.Errorf("pattern does not match %q", line)
+		}
+	}
+}
+
+func TestReadLinesLimitStopsAtLimit(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "sample.log")
+	body := "a 1\n\nb 2\nc 3\nd 4\n"
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	got, err := ReadLinesLimit(path, 2)
+	if err != nil {
+		t.Fatalf("ReadLinesLimit: %v", err)
+	}
+	if want := []string{"a 1", "b 2"}; strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Errorf("limited lines = %v, want %v", got, want)
+	}
+
+	all, err := ReadLines(path)
+	if err != nil {
+		t.Fatalf("ReadLines: %v", err)
+	}
+	if len(all) != 4 {
+		t.Errorf("ReadLines = %v, want 4 lines", all)
+	}
+
+	s, err := FromFile(path, Options{MaxSampleLines: 1})
+	if err != nil {
+		t.Fatalf("FromFile: %v", err)
+	}
+	if s.Lines != 1 {
+		t.Errorf("schema lines = %d, want 1", s.Lines)
 	}
 }

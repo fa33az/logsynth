@@ -41,8 +41,8 @@ $ echo $?
 1
 ```
 
-That exit code is the whole point: a log format change becomes a red build
-instead of a silent 2 a.m. pager.
+The exit code is the point. A format change becomes a red build instead of a
+silent 2 a.m. page.
 
 ## Real logs, not just fixtures
 
@@ -76,15 +76,15 @@ first: {Time1:2026-10-05 07:30:11 Field1:upgrade Field2:libatk-adaptor:amd64 Fie
 last:  {Time1:2026-10-21 14:26:10 Field1:status Field2:installed Field3:ca-certificates-java:all Field4:20240118}
 ```
 
-The prediction and the result agree to the line, and the 37 rejects are exactly
-the startup lines that were reported as a variant up front.
+Prediction and result agree line for line. Those 37 rejects are the startup lines
+that were already listed as a variant.
 
 | log | shape | coverage | notes |
 | --- | --- | --- | --- |
 | `/var/log/dpkg.log` | positional | 2406/2443 (98.5%) | date + clock folded into one `ts` |
 | `examples/dpkg/dpkg.log` | positional | 40/40 (100%) | real 40-line excerpt, committed |
 | `/var/log/alternatives.log` | positional | 36/49 (73.5%) | folded `ts` with a trailing colon |
-| `journalctl -n 300` | positional | 106/300 (35.3%) | `Oct 21 18:04:35` folded; free-text messages vary per line |
+| `journalctl -n 300` | positional | 148/300 (49.3%) | `Oct 21 18:18:38` folded, `kwin_wayland_wrapper[2264]:` one column; message tails still vary |
 | `/var/log/Xorg.0.log` | positional | 60/587 (10.2%) | prose log, positional inference is the wrong tool |
 
 `examples/dpkg/` holds a 40-line excerpt of that real log, a generated parser,
@@ -135,11 +135,11 @@ RFC 3339 and epoch-free variants), `int`, `float`, `uuid`, `hex`, `url`,
 For positional logs, quoted (`"..."`) and bracketed (`[...]`) segments stay
 whole, so a request line with spaces never splits into three fields.
 
-A timestamp written with a space — `2026-10-05 07:26:29` in dpkg and apt,
-`Oct 21 13:20:00` in syslog, `2026-10-05 07:31:41:` in update-alternatives — is
-folded back into a single `ts` field instead of being emitted as a date column
-plus a clock column. The schema records it as `"span": 2` with the layout that
-matched, and the pattern matches it as one capture.
+A timestamp written with a space gets folded back into a single `ts` field:
+`2026-10-05 07:26:29` in dpkg and apt, `Oct 21 13:20:00` in syslog,
+`2026-10-05 07:31:41:` in update-alternatives. Without the fold you end up with
+a date column plus a clock column. The schema records `"span": 2` and the layout
+that matched, and the pattern captures both tokens as one field.
 
 ## What the generated Go looks like
 
@@ -249,11 +249,13 @@ logsynth drift main.schema.json pr.schema.json
 ## How it works
 
 1. Tokenise each line into structural tokens, keeping quotes and brackets
-   intact, and cluster lines by shape (`w w w b q w w q q`).
+   intact, and cluster lines by shape (`w w w b q w w q q`). A syslog process
+   tag is one token even with the pid attached, so `kwin_wayland_wrapper[2264]:`
+   is a column rather than three.
 2. Fold whitespace-separated timestamps back together, then pick the dominant
    shape, infer a type per column, and merge votes: a `float` beside `int`
-   widens to `float`, anything else widens to `str` — the only type that can
-   never reject a later line.
+   widens to `float`, anything else widens to `str`, which is the only type
+   that can never reject a later line.
 3. Name the fields. A recognised combined-log prefix gets canonical nginx
    names, which is why a widened `body_bytes` reports one type change instead
    of nine renames.
@@ -262,10 +264,10 @@ logsynth drift main.schema.json pr.schema.json
 5. Emit code through `go/format`, so a generator bug fails at emit time rather
    than in your tree.
 
-## Limits, stated plainly
+## Limits
 
 - Only the dominant shape is emitted. Other shapes are reported with counts and
-  examples, never silently parsed — coverage tells you exactly what is missing.
+  examples and never silently parsed, so coverage tells you what is missing.
 - Positional inference assumes stable field order. Logs that reorder fields per
   line fall back to a lower coverage number; nothing pretends otherwise.
 - No multi-line records yet. Stack traces attached to a line become part of the
@@ -276,7 +278,9 @@ logsynth drift main.schema.json pr.schema.json
   inference: the message column takes a different number of tokens per line, so
   coverage lands in the 10-40% range. That number is reported, not hidden.
 - No streaming throughput tuning. `ParseAll` is a single-pass scanner; measure
-  it on your data instead of trusting a README number.
+  it on your data instead of trusting a README number. `--limit N` now stops
+  reading at N lines rather than reading the file and slicing, so a bounded
+  sample stays bounded in memory.
 - Generated parsers are intentionally dependency-free, which means they carry
   their own helpers instead of importing a library.
 
@@ -297,4 +301,4 @@ testdata/              fixtures, including the drift demo logs
 
 ## License
 
-MIT — see `LICENSE`.
+MIT. See `LICENSE`.

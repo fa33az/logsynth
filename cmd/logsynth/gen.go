@@ -32,7 +32,7 @@ func runGen(args []string) error {
 	}
 
 	path := fs.Arg(0)
-	lines, err := infer.ReadLines(path)
+	lines, err := infer.ReadLinesLimit(path, *limit)
 	if err != nil {
 		return err
 	}

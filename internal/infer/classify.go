@@ -107,8 +107,8 @@ func isURL(value string) bool {
 }
 
 // isHexID recognises long hex identifiers (trace ids, request ids). A candidate
-// must contain at least one a-f letter so plain integers — including epoch
-// nanoseconds — keep their int type.
+// must contain at least one a-f letter, so plain integers (including epoch
+// nanoseconds) keep their int type.
 func isHexID(value string) bool {
 	if len(value) < 16 {
 		return false
