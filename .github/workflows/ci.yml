@@ -1,0 +1,96 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+      - run: gofmt -l . | tee /tmp/gofmt.out
+        shell: bash
+      - run: test ! -s /tmp/gofmt.out
+        shell: bash
+        name: gofmt clean
+      - run: go vet ./...
+      - run: go test ./...
+      - run: go build ./cmd/logsynth
+
+  reproduce:
+    # Generated artifacts are committed: regenerate them and fail if the
+    # working tree moves. This is the guard against emitter drift.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+      - name: regenerate examples
+        run: |
+          go run ./cmd/logsynth gen examples/nginx/access.log --lang go \
+            --package nginx --out examples/nginx/parser.go --test \
+            --schema-out examples/nginx/access.schema.json
+          go run ./cmd/logsynth gen examples/events/events.jsonl --lang go \
+            --package events --out examples/events/parser.go --test \
+            --schema-out examples/events/events.schema.json
+          go run ./cmd/logsynth gen examples/app/app.log --lang python \
+            --out examples/app/parser.py
+          go run ./cmd/logsynth gen examples/dpkg/dpkg.log --lang go \
+            --package dpkg --out examples/dpkg/parser.go --test \
+            --schema-out examples/dpkg/dpkg.schema.json
+      - name: tree must be unchanged
+        run: git diff --exit-code --stat
+      - name: generated python parser parses the sample log
+        run: |
+          python3 - <<'PY'
+          import sys
+          sys.path.insert(0, "examples/app")
+          import parser
+          records = parser.parse_all("examples/app/app.log")
+          assert len(records) == 80, len(records)
+          assert records[0].status is not None
+          assert parser.parse("not a kv line") is None
+          print("python parser ok:", len(records), "records")
+          PY
+      - name: drift demo must exit 1
+        run: |
+          set +e
+          go run ./cmd/logsynth drift testdata/nginx_drift.log \
+            --schema examples/nginx/access.schema.json
+          code=$?
+          set -e
+          if [ "$code" -ne 1 ]; then
+            echo "expected exit 1 from drift, got $code"
+            exit 1
+          fi
+      - name: no drift on the baseline log
+        run: |
+          go run ./cmd/logsynth drift examples/nginx/access.log \
+            --schema examples/nginx/access.schema.json
+      - name: enum churn is a note, not drift
+        run: |
+          go run ./cmd/logsynth drift testdata/dpkg_churn.log \
+            --schema examples/dpkg/dpkg.schema.json
+      - name: dropped columns must exit 1
+        run: |
+          set +e
+          go run ./cmd/logsynth drift testdata/dpkg_dropped.log \
+            --schema examples/dpkg/dpkg.schema.json
+          code=$?
+          set -e
+          if [ "$code" -ne 1 ]; then
+            echo "expected exit 1 from a dropped column, got $code"
+            exit 1
+          fi

@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "mode": "positional",
+  "source": "examples/dpkg/dpkg.log",
+  "lines": 40,
+  "matched": 40,
+  "pattern": "^(?P<time_1>\\d{4}-\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}:\\d{2}:?)\\s+(?P<field_1>\\S+)\\s+(?P<field_2>\\S+)\\s+(?P<field_3>\\S+)\\s+(?P<field_4>\\S+)$",
+  "fields": [
+    {
+      "name": "time_1",
+      "type": "ts",
+      "index": 0,
+      "kind": "word",
+      "span": 2,
+      "layout": "2006-01-02 15:04:05",
+      "sample": "2026-10-05 07:30:11"
+    },
+    {
+      "name": "field_1",
+      "type": "str",
+      "index": 2,
+      "kind": "word",
+      "enum": [
+        "status",
+        "upgrade"
+      ],
+      "sample": "upgrade"
+    },
+    {
+      "name": "field_2",
+      "type": "str",
+      "index": 3,
+      "kind": "word",
+      "enum": [
+        "at-spi2-common:all",
+        "at-spi2-core:amd64",
+        "gir1.2-atk-1.0:amd64",
+        "gir1.2-atspi-2.0:amd64",
+        "half-configured",
+        "half-installed",
+        "libatk-adaptor:amd64",
+        "libatk-bridge2.0-0t64:amd64",
+        "libatk1.0-0t64:amd64",
+        "libatspi2.0-0t64:amd64",
+        "triggers-pending",
+        "unpacked"
+      ],
+      "sample": "libatk-adaptor:amd64"
+    },
+    {
+      "name": "field_3",
+      "type": "str",
+      "index": 4,
+      "kind": "word",
+      "enum": [
+        "2.61.90-1~bpo13+1",
+        "at-spi2-common:all",
+        "at-spi2-core:amd64",
+        "gir1.2-atk-1.0:amd64",
+        "gir1.2-atspi-2.0:amd64",
+        "libatk-adaptor:amd64",
+        "libatk-bridge2.0-0t64:amd64",
+        "libatk1.0-0t64:amd64",
+        "libatspi2.0-0t64:amd64",
+        "libc-bin:amd64"
+      ],
+      "sample": "2.61.90-1~bpo13+1"
+    },
+    {
+      "name": "field_4",
+      "type": "str",
+      "index": 5,
+      "kind": "word",
+      "enum": [
+        "2.41-12+deb13u4",
+        "2.61.90-1~bpo13+1",
+        "2.62.0-2~bpo13+1"
+      ],
+      "sample": "2.62.0-2~bpo13+1"
+    }
+  ]
+}

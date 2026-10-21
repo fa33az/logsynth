@@ -1,0 +1,17 @@
+# build output
+/logsynth
+/logsynth.exe
+/dist/
+
+# test binaries
+*.test
+*.out
+
+# editor / OS noise
+.DS_Store
+.idea/
+.vscode/
+
+# python
+__pycache__/
+*.pyc

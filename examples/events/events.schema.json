@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "mode": "json",
+  "source": "examples/events/events.jsonl",
+  "lines": 60,
+  "matched": 60,
+  "fields": [
+    {
+      "name": "http_method",
+      "type": "str",
+      "index": 0,
+      "key": "http.method",
+      "kind": "word",
+      "enum": [
+        "GET",
+        "POST"
+      ],
+      "sample": "GET"
+    },
+    {
+      "name": "http_path",
+      "type": "path",
+      "index": 1,
+      "key": "http.path",
+      "kind": "word",
+      "sample": "/metrics"
+    },
+    {
+      "name": "http_status",
+      "type": "int",
+      "index": 2,
+      "key": "http.status",
+      "kind": "word",
+      "sample": "500"
+    },
+    {
+      "name": "latency_ms",
+      "type": "float",
+      "index": 3,
+      "key": "latency_ms",
+      "kind": "word",
+      "sample": "24.857"
+    },
+    {
+      "name": "level",
+      "type": "str",
+      "index": 4,
+      "key": "level",
+      "kind": "word",
+      "enum": [
+        "debug",
+        "error",
+        "info",
+        "warn"
+      ],
+      "sample": "info"
+    },
+    {
+      "name": "service",
+      "type": "str",
+      "index": 5,
+      "key": "service",
+      "kind": "word",
+      "enum": [
+        "gateway"
+      ],
+      "sample": "gateway"
+    },
+    {
+      "name": "trace_id",
+      "type": "hex",
+      "index": 6,
+      "key": "trace_id",
+      "kind": "word",
+      "sample": "a162c76f06120a3e39121b70268d6895"
+    },
+    {
+      "name": "ts",
+      "type": "ts",
+      "index": 7,
+      "key": "ts",
+      "kind": "word",
+      "sample": "2026-10-12T17:24:02.123Z"
+    }
+  ]
+}

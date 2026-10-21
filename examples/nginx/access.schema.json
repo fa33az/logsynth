@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "mode": "positional",
+  "source": "examples/nginx/access.log",
+  "lines": 120,
+  "matched": 120,
+  "pattern": "^(?P<remote_addr>\\d{1,3}(?:\\.\\d{1,3}){3})\\s+(?P<ident>(?:\\S+|-))\\s+(?P<auth_user>(?:\\S+|-))\\s+\\[(?P<time_local>[^\\]]*)\\]\\s+\"(?P<request>[^\"]*)\"\\s+(?P<status>-?\\d+)\\s+(?P<body_bytes>-?\\d+)\\s+\"(?P<http_referer>[^\"]*)\"\\s+\"(?P<http_user_agent>[^\"]*)\"$",
+  "fields": [
+    {
+      "name": "remote_addr",
+      "type": "ipv4",
+      "index": 0,
+      "kind": "word",
+      "sample": "172.16.8.203"
+    },
+    {
+      "name": "ident",
+      "type": "str",
+      "index": 1,
+      "kind": "word",
+      "nullable": true,
+      "sample": "-"
+    },
+    {
+      "name": "auth_user",
+      "type": "str",
+      "index": 2,
+      "kind": "word",
+      "nullable": true,
+      "sample": "-"
+    },
+    {
+      "name": "time_local",
+      "type": "ts",
+      "index": 3,
+      "kind": "bracketed",
+      "sample": "11/Oct/2026:15:07:34 +0700"
+    },
+    {
+      "name": "request",
+      "type": "request",
+      "index": 4,
+      "kind": "quoted",
+      "enum": [
+        "DELETE",
+        "GET",
+        "HEAD",
+        "POST",
+        "PUT"
+      ],
+      "sample": "GET /static/app.js HTTP/1.1"
+    },
+    {
+      "name": "status",
+      "type": "int",
+      "index": 5,
+      "kind": "word",
+      "sample": "403"
+    },
+    {
+      "name": "body_bytes",
+      "type": "int",
+      "index": 6,
+      "kind": "word",
+      "sample": "19098"
+    },
+    {
+      "name": "http_referer",
+      "type": "url",
+      "index": 7,
+      "kind": "quoted",
+      "nullable": true,
+      "sample": "https://example.com/docs"
+    },
+    {
+      "name": "http_user_agent",
+      "type": "str",
+      "index": 8,
+      "kind": "quoted",
+      "enum": [
+        "Go-http-client/2.0",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36",
+        "curl/8.1",
+        "kube-probe/1.30",
+        "python-requests/2.32.3",
+        "sqlmap/1.8"
+      ],
+      "sample": "sqlmap/1.8"
+    }
+  ]
+}
