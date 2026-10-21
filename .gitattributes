@@ -1,0 +1,12 @@
+# Everything in this repo is text and must stay LF on every platform, so
+# `gofmt -l .` is a meaningful gate on Windows too.
+* text=auto eol=lf
+
+*.go   text eol=lf
+*.py   text eol=lf
+*.json text eol=lf
+*.yml  text eol=lf
+*.md   text eol=lf
+*.log  text eol=lf
+*.jsonl text eol=lf
+LICENSE text eol=lf
